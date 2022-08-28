@@ -10,7 +10,7 @@ import (
 )
 
 type CurrencyGraph struct {
-	nodes []*Currency
+	nodes map[string]*Currency
 	edges map[Currency][]*Edge
 	lock  sync.RWMutex
 }
@@ -35,7 +35,13 @@ type Fee struct {
 // AddNode adds a node to the graph
 func (g *CurrencyGraph) AddNode(n *Currency) {
 	g.lock.Lock()
-	g.nodes = append(g.nodes, n)
+	if g.nodes == nil {
+		g.nodes = make(map[string]*Currency)
+	}
+
+	if _, ok := g.nodes[n.value]; !ok {
+		g.nodes[n.value] = n
+	}
 	g.lock.Unlock()
 }
 
@@ -63,11 +69,11 @@ func (n *Currency) String() string {
 func (g *CurrencyGraph) String() {
 	g.lock.RLock()
 	s := ""
-	for i := 0; i < len(g.nodes); i++ {
-		s += g.nodes[i].String() + " -> "
-		near := g.edges[*g.nodes[i]]
-		for j := 0; j < len(near); j++ {
-			s += near[j].currency.String() + "(" + near[j].symbol + ") "
+	for _, node := range g.nodes {
+		s += node.String() + " -> "
+		near := g.edges[*node]
+		for _, item := range near {
+			s += item.currency.String() + "(" + item.symbol + ") "
 		}
 		s += "\n"
 	}

@@ -16,8 +16,8 @@ func main() {
 	initConfig()
 	initSpotConnection()
 	initFeesMap()
-
 	initCurrencyGraph()
+	currencyGraph.String()
 
 	return
 	done := make(chan struct{})
