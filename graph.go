@@ -116,13 +116,6 @@ func initCurrencyGraph() {
 	existNodes := make(map[string]*Currency)
 
 	for _, symbol := range rs.Symbols {
-		if _, ok := symbols[symbol.Symbol]; !ok {
-			symbols[symbol.Symbol] = &SymbolInfo{
-				symbol: symbol,
-				book:   nil,
-			}
-		}
-
 		if _, ok := existNodes[symbol.BaseAsset]; !ok {
 			existNodes[symbol.BaseAsset] = &Currency{value: symbol.BaseAsset}
 			currencyGraph.AddNode(existNodes[symbol.BaseAsset])
@@ -133,7 +126,16 @@ func initCurrencyGraph() {
 			currencyGraph.AddNode(existNodes[symbol.QuoteAsset])
 		}
 
-		currencyGraph.AddEdge(symbol.Symbol, existNodes[symbol.BaseAsset], existNodes[symbol.QuoteAsset])
+		if binance.SymbolStatusType(symbol.Status) == binance.SymbolStatusTypeTrading {
+			currencyGraph.AddEdge(symbol.Symbol, existNodes[symbol.BaseAsset], existNodes[symbol.QuoteAsset])
+
+			if _, ok := symbols[symbol.Symbol]; !ok {
+				symbols[symbol.Symbol] = &SymbolInfo{
+					symbol: symbol,
+					book:   nil,
+				}
+			}
+		}
 	}
 
 	log.Println("Done.")

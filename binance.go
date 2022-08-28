@@ -9,6 +9,13 @@ import (
 
 var spotClient *binance.Client
 
+var symbols map[string]*SymbolInfo
+
+type SymbolInfo struct {
+	symbol binance.Symbol
+	book   *binance.WsBookTickerEvent
+}
+
 func initSpotConnection() {
 	log.Println("Initializing binance spot connection...")
 	binance.UseTestnet = config.GetBool("binance.test")
@@ -41,4 +48,25 @@ func updateBalances() {
 			log.Printf("Free: %s %s Locked: %s %s ", balance.Free, balance.Asset, balance.Locked, balance.Asset)
 		}
 	}
+}
+
+func wsBookTicker(done chan struct{}) {
+	wsHandler := func(event *binance.WsBookTickerEvent) {
+		if _, ok := symbols[event.Symbol]; ok {
+			symbols[event.Symbol].book = event
+		}
+	}
+
+	errHandler := func(err error) {
+		log.Fatal(err)
+	}
+
+	doneC, _, err := binance.WsAllBookTickerServe(wsHandler, errHandler)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	msg := <-doneC
+	done <- msg
 }
