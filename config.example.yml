@@ -1,0 +1,6 @@
+binance:
+  test: true
+  api:
+    spot:
+      key: YOUR_SPOT_API_KEY
+      secret: YOUR_SPOT_API_SECRET
