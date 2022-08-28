@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/0fs/c-bot/utils"
 	"github.com/adshao/go-binance/v2"
 	"log"
 	"sync"
@@ -22,6 +23,13 @@ type Edge struct {
 type Currency struct {
 	value string
 	books *binance.WsBookTickerEvent
+}
+
+var fees map[string]Fee
+
+type Fee struct {
+	m float64 // Maker
+	t float64 // Taker
 }
 
 // AddNode adds a node to the graph
@@ -67,7 +75,28 @@ func (g *CurrencyGraph) String() {
 	g.lock.RUnlock()
 }
 
+func initFeesMap() {
+	log.Println("Initializing fees map...")
+	fees := make(map[string]Fee)
+
+	rs, err := spotClient.NewTradeFeeService().Do(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, item := range rs {
+		fees[item.Symbol] = Fee{
+			m: utils.Stf(item.MakerCommission),
+			t: utils.Stf(item.TakerCommission),
+		}
+	}
+
+	log.Println("Done.")
+	log.Println()
+}
+
 func initCurrencyGraph() {
+	log.Println("Initializing currency graph...")
 	rs, err := spotClient.NewExchangeInfoService().Do(context.Background())
 	if err != nil {
 		log.Fatal(err)
@@ -89,4 +118,7 @@ func initCurrencyGraph() {
 
 		currencyGraph.AddEdge(symbol.Symbol, existNodes[symbol.BaseAsset], existNodes[symbol.QuoteAsset])
 	}
+
+	log.Println("Done.")
+	log.Println()
 }

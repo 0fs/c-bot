@@ -12,10 +12,14 @@ var currencyGraph CurrencyGraph
 //var done chan struct{}
 
 func main() {
+	log.SetFlags(0)
 	initConfig()
 	initSpotConnection()
+	initFeesMap()
+
 	initCurrencyGraph()
 
+	return
 	done := make(chan struct{})
 
 	go wsBookTicker(done, "BTCUSDT", "ETHUSDT")

@@ -9,33 +9,22 @@ import (
 
 var spotClient *binance.Client
 
-var btcBalance binance.Balance
-var usdtBalance binance.Balance
-
-var symbol string
-var limit int
-var interval string
-var qty string
-
-var firstTrade = true
-
 func initSpotConnection() {
-	log.Println("Spot initialization...")
+	log.Println("Initializing binance spot connection...")
 	binance.UseTestnet = config.GetBool("binance.test")
 	spotClient = binance.NewClient(config.GetString("binance.api.spot.key"), config.GetString("binance.api.spot.secret"))
 
 	timeOffset, err := spotClient.NewSetServerTimeService().Do(context.Background())
 	if err != nil {
-		log.Fatal("Could not get server time offset")
+		log.Fatal(err)
 	}
+
 	spotClient.TimeOffset = timeOffset
 
-	symbol = config.GetString("binance.symbol")
-	limit = config.GetInt("binance.limit")
-	interval = config.GetString("binance.interval")
-	qty = config.GetString("binance.qty")
-
 	updateBalances()
+
+	log.Println("Done.")
+	log.Println()
 }
 
 func updateBalances() {
@@ -43,18 +32,13 @@ func updateBalances() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("Non-zero balances:")
 	for _, balance := range account.Balances {
-		switch balance.Asset {
-		case "BTC":
-			btcBalance = balance
-			break
-		case "USDT":
-			usdtBalance = balance
-			break
-		default:
-			break
+		free := utils.Stf(balance.Free)
+		locked := utils.Stf(balance.Locked)
+		if free > 0 || locked > 0 {
+			log.Printf("Free: %s %s Locked: %s %s ", balance.Free, balance.Asset, balance.Locked, balance.Asset)
 		}
 	}
-
-	log.Printf("BTC: %.8f | USDT %.8f", utils.Stf(btcBalance.Free), utils.Stf(usdtBalance.Free))
 }
