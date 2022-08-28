@@ -116,6 +116,12 @@ func initCurrencyGraph() {
 	existNodes := make(map[string]*Currency)
 
 	for _, symbol := range rs.Symbols {
+		if _, ok := symbols[symbol.Symbol]; !ok {
+			symbols[symbol.Symbol] = &SymbolInfo{
+				symbol: symbol,
+				book:   nil,
+			}
+		}
 
 		if _, ok := existNodes[symbol.BaseAsset]; !ok {
 			existNodes[symbol.BaseAsset] = &Currency{value: symbol.BaseAsset}

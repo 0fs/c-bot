@@ -5,40 +5,39 @@ import (
 	"log"
 )
 
-var books map[string]*binance.WsBookTickerEvent
-
 var currencyGraph CurrencyGraph
 var fees map[string]Fee
+var symbols map[string]*SymbolInfo
+
+type SymbolInfo struct {
+	symbol binance.Symbol
+	book   *binance.WsBookTickerEvent
+}
 
 //var done chan struct{}
 
 func main() {
 	log.SetFlags(0)
-	fees = make(map[string]Fee)
 	initConfig()
 	initSpotConnection()
+
+	fees = make(map[string]Fee)
+	symbols = make(map[string]*SymbolInfo)
+
 	initFeesMap()
 	initCurrencyGraph()
-	currencyGraph.String()
-	return
 
 	done := make(chan struct{})
 
-	go wsBookTicker(done, "BTCUSDT", "ETHUSDT")
+	go wsBookTicker(done)
 
 	<-done
 }
 
-func wsBookTicker(done chan struct{}, symbols ...string) {
-	books := make(map[string]*binance.WsBookTickerEvent)
-	for _, symbol := range symbols {
-		books[symbol] = nil
-	}
-
+func wsBookTicker(done chan struct{}) {
 	wsHandler := func(event *binance.WsBookTickerEvent) {
-		if _, ok := books[event.Symbol]; ok {
-			books[event.Symbol] = event
-			log.Printf("%s : Buy: %s x %s - Sell: %s x %s\n", event.Symbol, event.BestAskPrice, event.BestAskQty, event.BestBidPrice, event.BestBidQty)
+		if _, ok := symbols[event.Symbol]; ok {
+			symbols[event.Symbol].book = event
 		}
 	}
 
