@@ -18,14 +18,13 @@ type CurrencyGraph struct {
 type Edge struct {
 	symbol   string
 	currency *Currency
+	fee      float64
 }
 
 type Currency struct {
 	value string
 	books *binance.WsBookTickerEvent
 }
-
-var fees map[string]Fee
 
 type Fee struct {
 	m float64 // Maker
@@ -54,10 +53,12 @@ func (g *CurrencyGraph) AddEdge(symbol string, n1, n2 *Currency) {
 	g.edges[*n1] = append(g.edges[*n1], &Edge{
 		symbol:   symbol,
 		currency: n2,
+		fee:      fees[symbol].m,
 	})
 	g.edges[*n2] = append(g.edges[*n2], &Edge{
 		symbol:   symbol,
 		currency: n1,
+		fee:      fees[symbol].t,
 	})
 	g.lock.Unlock()
 }
@@ -70,20 +71,24 @@ func (g *CurrencyGraph) String() {
 	g.lock.RLock()
 	s := ""
 	for _, node := range g.nodes {
-		s += node.String() + " -> "
+		s += node.String()
 		near := g.edges[*node]
-		for _, item := range near {
-			s += item.currency.String() + "(" + item.symbol + ") "
+		for j, item := range near {
+			if j != 0 {
+				for i := 0; i < len(node.String()); i++ {
+					s += " "
+				}
+			}
+			s += fmt.Sprintf(" -> %s - Symbol: %s, Fee: %.1f%%", item.currency.String(), item.symbol, item.fee*100)
+			fmt.Println(s)
+			s = ""
 		}
-		s += "\n"
 	}
-	fmt.Println(s)
 	g.lock.RUnlock()
 }
 
 func initFeesMap() {
 	log.Println("Initializing fees map...")
-	fees := make(map[string]Fee)
 
 	rs, err := spotClient.NewTradeFeeService().Do(context.Background())
 	if err != nil {

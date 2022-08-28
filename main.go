@@ -8,18 +8,20 @@ import (
 var books map[string]*binance.WsBookTickerEvent
 
 var currencyGraph CurrencyGraph
+var fees map[string]Fee
 
 //var done chan struct{}
 
 func main() {
 	log.SetFlags(0)
+	fees = make(map[string]Fee)
 	initConfig()
 	initSpotConnection()
 	initFeesMap()
 	initCurrencyGraph()
 	currencyGraph.String()
-
 	return
+
 	done := make(chan struct{})
 
 	go wsBookTicker(done, "BTCUSDT", "ETHUSDT")
