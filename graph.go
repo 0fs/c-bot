@@ -31,6 +31,12 @@ type Fee struct {
 	t float64 // Taker
 }
 
+var color map[*Currency]struct{}
+var cycles map[int][]*Currency
+var p map[*Currency]*Currency
+var ncycle int
+var cycleDepth = 4
+
 // AddNode adds a node to the graph
 func (g *CurrencyGraph) AddNode(n *Currency) {
 	g.lock.Lock()
@@ -140,4 +146,43 @@ func initCurrencyGraph() {
 
 	log.Println("Done.")
 	log.Println()
+}
+
+func findCycles(currency *Currency) {
+	ncycle = 0
+	color = make(map[*Currency]struct{})
+	cycles = make(map[int][]*Currency)
+	p = make(map[*Currency]*Currency)
+	dfs(currency, 0)
+}
+
+func saveCycle(f *Currency, s *Currency) int {
+	delete(cycles, ncycle)
+	cycles[ncycle] = append(cycles[ncycle], s)
+	for v := f; v != s; v = p[v] {
+		cycles[ncycle] = append(cycles[ncycle], v)
+	}
+	cycles[ncycle] = append(cycles[ncycle], s)
+
+	return len(cycles[ncycle])
+}
+
+func dfs(c *Currency, depth int) {
+	depth++
+	if depth > cycleDepth {
+		return
+	}
+	color[c] = struct{}{}
+	for _, e := range currencyGraph.edges[*c] {
+		to := e.currency
+		if _, ok := color[to]; !ok {
+			p[to] = c
+			dfs(to, depth)
+		} else {
+			if saveCycle(c, to) > cycleDepth {
+				ncycle++
+			}
+		}
+	}
+	delete(color, c)
 }

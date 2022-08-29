@@ -19,6 +19,9 @@ func main() {
 
 	initFeesMap()
 	initCurrencyGraph()
+	findCycles(currencyGraph.nodes["USDT"])
+	log.Println(cycles)
+	return
 
 	done := make(chan struct{})
 
