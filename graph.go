@@ -35,7 +35,6 @@ var color map[*Currency]struct{}
 var cycles map[int][]*Currency
 var p map[*Currency]*Currency
 var ncycle int
-var cycleDepth = 3
 
 // AddNode adds a node to the graph
 func (g *CurrencyGraph) AddNode(n *Currency) {
