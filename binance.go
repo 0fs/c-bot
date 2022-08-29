@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"github.com/0fs/c-bot/utils"
 	"github.com/adshao/go-binance/v2"
 	"log"
@@ -50,10 +51,23 @@ func updateBalances() {
 	}
 }
 
-func wsBookTicker(done chan struct{}) {
+func wsBookTicker(done chan struct{}, asset string) {
 	wsHandler := func(event *binance.WsBookTickerEvent) {
 		if _, ok := symbols[event.Symbol]; ok {
 			symbols[event.Symbol].book = event
+
+			if symbols[event.Symbol].symbol.BaseAsset != asset && symbols[event.Symbol].symbol.QuoteAsset != asset {
+				for _, cycle := range cycles {
+					profit, err := checkCycle(cycle)
+					if err != nil {
+						continue
+					}
+					profit = (profit - 1) * 100
+					if profit > 0 {
+						log.Printf("%v result %.4f%%", cycle, profit)
+					}
+				}
+			}
 		}
 	}
 
@@ -69,4 +83,36 @@ func wsBookTicker(done chan struct{}) {
 
 	msg := <-doneC
 	done <- msg
+}
+
+func checkCycle(steps []*Currency) (float64, error) {
+	var price, qty float64
+	base, qty := 10000.0, 10000.0
+	cnt := 0
+	for i := 1; i < len(steps); i++ {
+		cnt++
+		edges := currencyGraph.edges[*steps[i-1]]
+		for _, edge := range edges {
+			if edge.currency == steps[i] {
+				if symbols[edge.symbol].book == nil {
+					return 0, errors.New("no book")
+				}
+
+				if edge.currency.value == symbols[edge.symbol].symbol.BaseAsset {
+					price = utils.Stf(symbols[edge.symbol].book.BestAskPrice)
+				} else {
+					price = utils.Stf(symbols[edge.symbol].book.BestBidPrice)
+				}
+
+				if edge.currency.value == symbols[edge.symbol].symbol.BaseAsset {
+					qty /= price
+				} else {
+					qty *= price
+				}
+				qty -= qty * edge.fee
+			}
+		}
+	}
+
+	return qty / base, nil
 }

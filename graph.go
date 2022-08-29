@@ -35,7 +35,7 @@ var color map[*Currency]struct{}
 var cycles map[int][]*Currency
 var p map[*Currency]*Currency
 var ncycle int
-var cycleDepth = 4
+var cycleDepth = 3
 
 // AddNode adds a node to the graph
 func (g *CurrencyGraph) AddNode(n *Currency) {
@@ -154,6 +154,7 @@ func findCycles(currency *Currency) {
 	cycles = make(map[int][]*Currency)
 	p = make(map[*Currency]*Currency)
 	dfs(currency, 0)
+	delete(cycles, ncycle) // TODO: check
 }
 
 func saveCycle(f *Currency, s *Currency) int {
